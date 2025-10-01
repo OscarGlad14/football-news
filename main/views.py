@@ -76,12 +76,23 @@ def show_xml_by_id(request, news_id):
        return HttpResponse(status=404)
    
 def show_json_by_id(request, news_id):
-   try:
-       news_item = News.objects.filter(pk=news_id)
-       json_data = serializers.serialize("json", news_item)
-       return HttpResponse(json_data, content_type="application/json")
-   except News.DoesNotExist:
-       return HttpResponse(status=404)
+    try:
+        news = News.objects.select_related('user').get(pk=news_id)
+        data = {
+            'id': str(news.id),
+            'title': news.title,
+            'content': news.content,
+            'category': news.category,
+            'thumbnail': news.thumbnail,
+            'news_views': news.news_views,
+            'created_at': news.created_at.isoformat() if news.created_at else None,
+            'is_featured': news.is_featured,
+            'user_id': news.user_id,
+            'user_username': news.user.username if news.user_id else None,
+        }
+        return JsonResponse(data)
+    except News.DoesNotExist:
+        return JsonResponse({'detail': 'Not found'}, status=404)
 
 def register(request):
     form = UserCreationForm()
